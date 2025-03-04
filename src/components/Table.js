@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Form from "./Form";
-import PageButton from "./PageButton";
+// import PageButton from "./PageButton";
 
 export default function Table() {
-    const productTemplate = {id: '', name: '', importDate: '', amount: '', typeId: ''};
-    const productTypeTemplate = {id: '', name: ''};
+    const productTemplate = { id: '', name: '', importDate: '', amount: '', typeId: '' };
+    // const productTypeTemplate = {id: '', name: ''};
 
     const [products, setProducts] = useState([]);
+    const [sortedProducts, setSortedProducts] = useState([]);
     const [productTypes, setProductTypes] = useState([]);
     const [error, setError] = useState("");
+
+    const [search, setSearch] = useState({ name: "", typeId: "" });
 
     // const pageLimit = 5;
     // const [pages, setPages] = useState(0);
@@ -39,12 +42,15 @@ export default function Table() {
             })
         axios.get("http://localhost:3001/products")
             .then((res) => {
-                let sorted = res.data.sort((a,b) => a.amount - b.amount);
-                console.log(sorted);
+                let sorted = res.data.sort((a, b) => a.amount - b.amount);
                 setProducts(sorted);
+                searchProduct(sorted);
+
                 // setPages(Math.ceil(res.data.length / pageLimit));
                 // let temp = (currentPage - 1) * 5;
                 // setPagedData(res.data.slice(temp, temp + 5));
+            })
+            .then(() => {
             })
             .catch((err) => {
                 setError(err);
@@ -67,6 +73,18 @@ export default function Table() {
         setProduct(prod);
         setShow(true);
     };
+
+    const searchProduct = (data) => {
+        let sorted = data ? data : products;
+        if (search.name !== "") {
+            sorted = sorted.filter((product) => product.name === search.name);
+        }
+        if (search.typeId !== "") {
+            sorted = sorted.filter((product) => product.typeId === search.typeId);
+        }
+        if (sorted.length === 0) alert("Không tìm thấy sản phẩm");
+        setSortedProducts(sorted);
+    }
 
     // const changePage = (num) => {
     //     setCurrentPage(1);
@@ -104,8 +122,16 @@ export default function Table() {
                 </div>
                 <div className="col-auto">
                     <form className="d-flex" role="search">
-                        <input className="form-control me-2" type="search" placeholder="Tìm kiếm sản phẩm" aria-label="Search" />
-                        <button className="btn btn-outline-success" type="submit">Tìm</button>
+                        <input className="form-control me-2" type="search" placeholder="Tên sản phẩm" aria-label="Search"
+                            onChange={(e) => setSearch({ ...search, name: e.target.value })} />
+                        <select className="form-control me-2" defaultValue=""
+                            onChange={(e) => setSearch({ ...search, typeId: e.target.value })}>
+                            <option value="">Loại sản phẩm</option>
+                            {productTypes.map((item) => (
+                                <option key={item.id} value={item.id}>{item.name}</option>
+                            ))}
+                        </select>
+                        <button className="btn btn-outline-success" type="button" onClick={() => {searchProduct()}}>Tìm</button>
                     </form>
                 </div>
             </div>
@@ -121,7 +147,7 @@ export default function Table() {
                     </tr>
                 </thead>
                 <tbody>
-                    {products.map((item, index) => (
+                    {sortedProducts.map((item) => (
                         <tr key={item.id}>
                             <th scope="row">{item.id}</th>
                             <td>{item.name}</td>
@@ -152,7 +178,7 @@ export default function Table() {
             </nav> */}
             {/* <PageButton currentPage={currentPage} pages={pages} setCurrentPage={setCurrentPage}/> */}
 
-            {show && <Form type={type} setShow={setShow} product={product} />}
+            {show && <Form type={type} refresh={refresh} setShow={setShow} product={product} productTypes={productTypes} />}
         </div>
     );
 }
